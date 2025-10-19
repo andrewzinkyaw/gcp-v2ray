@@ -246,17 +246,23 @@ main() {
     
     gcloud services enable cloudbuild.googleapis.com run.googleapis.com iam.googleapis.com --quiet
 
-    [[ -d "gcp-v2ray" ]] && rm -rf gcp-v2ray
-    git clone https://github.com/andrewzinkyaw/gcp-v2ray.git
-    cd gcp-v2ray
-    gcloud run deploy ${SERVICE_NAME} \
-        --image gcr.io/${PROJECT_ID}/gcp-v2ray-image \
-        --platform managed \
-        --region ${REGION} \
-        --allow-unauthenticated \
-        --cpu ${CPU} \
-        --memory ${MEMORY} \
-        --quiet
+    # ===== Clone repo =====
+[[ -d "gcp-v2ray" ]] && rm -rf gcp-v2ray
+git clone https://github.com/andrewzinkyaw/gcp-v2ray.git
+cd gcp-v2ray
+
+# ===== Build image =====
+gcloud builds submit --tag gcr.io/${PROJECT_ID}/gcp-v2ray-image
+
+# ===== Deploy Cloud Run =====
+gcloud run deploy ${SERVICE_NAME} \
+    --image gcr.io/${PROJECT_ID}/gcp-v2ray-image \
+    --platform managed \
+    --region ${REGION} \
+    --allow-unauthenticated \
+    --cpu ${CPU} \
+    --memory ${MEMORY} \
+    --quiet
 
     SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --region ${REGION} --format 'value(status.url)' --quiet)
     DOMAIN=$(echo $SERVICE_URL | sed 's|https://||')
